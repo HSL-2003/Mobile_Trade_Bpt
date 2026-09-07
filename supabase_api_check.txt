@@ -1,0 +1,2 @@
+I need to check the correct OAuth method for Supabase Flutter
+Let me check what's available:

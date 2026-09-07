@@ -1,0 +1,41 @@
+name: bot_trade_auth
+description: Bot Trade - Authentication UI with taste-skill design system
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
+  fl_chart: ^0.68.0
+  intl: ^0.19.0
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.0
+  dio: ^5.4.3+1
+  supabase_flutter: ^2.5.6
+  shared_preferences: ^2.2.3
+  url_launcher: ^6.2.2
+  http: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # taste-skill typography — variable fonts (single file covers all weights;
+  # Flutter maps FontWeight to the `wght` axis automatically).
+  # Both are licensed under the SIL Open Font License (OFL).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf

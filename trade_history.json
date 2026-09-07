@@ -1,0 +1,12 @@
+[
+    {
+        "ticket": 999123,
+        "symbol": "EURUSD",
+        "type": "BUY",
+        "volume": 0.3,
+        "open_price": 1.16884,
+        "close_price": 1.1685,
+        "profit": -10.2,
+        "close_time": "2026-09-04T10:43:17.114978"
+    }
+]

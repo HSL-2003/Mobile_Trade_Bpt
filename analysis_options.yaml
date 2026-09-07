@@ -1,0 +1,16 @@
+analyzer:
+  exclude:
+    - build/**
+    - web/**
+    - windows/**
+    - android/**
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    avoid_unnecessary_containers: true
+    sized_box_for_whitespace: true
+    prefer_const_literals_to_create_immutables: true
+    avoid_redundant_argument_values: true
