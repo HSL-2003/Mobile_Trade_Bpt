@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,7 @@ import 'dashboard_widgets.dart';
 import 'profit_chart.dart';
 import 'summary_widgets.dart';
 import 'trades_list_widget.dart';
+import 'widgets/ticker_marquee.dart';
 /// Main dashboard screen — three tabs: overview, live orders, account.
 /// Protected route. Polls fresh state every 2 seconds while visible.
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -121,6 +123,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ];
 
     return Scaffold(
+      extendBody: true,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
@@ -138,41 +141,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (_currentTab == 0) ..._buildOverviewTab(dashboardState, profile),
               if (_currentTab == 1) ..._buildOrdersTab(dashboardState),
               if (_currentTab == 2) ..._buildAccountTab(profile, currentUser),
-              const SliverToBoxAdapter(child: SizedBox(height: 96)),
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentTab,
-          onTap: (idx) => setState(() => _currentTab = idx),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Tổng Quan',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.candlestick_chart_outlined),
-              activeIcon: Icon(Icons.candlestick_chart),
-              label: 'Lệnh Đang Vào',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Tài Khoản',
-            ),
-          ],
-        ),
-      ),
+      bottomNavigationBar: _buildFloatingNavbar(),
     );
   }
 
@@ -195,6 +169,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: _buildBalanceHeroCard(
           profile,
           dashboardState.botState?.accountInfo,
+        ),
+      ),
+      const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 16),
+          child: TickerMarquee(),
         ),
       ),
       SliverToBoxAdapter(child: buildSummarySection(summary)),
@@ -245,137 +225,190 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     UserProfile? profile,
     AccountInfo? accountInfo,
   ) {
-    final currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final currencyFmt = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
     final balance = profile?.finance.balance ?? accountInfo?.balance ?? 10000.0;
     final equity = profile?.finance.equity ?? accountInfo?.equity ?? balance;
     final freeMargin =
         profile?.finance.freeMargin ?? accountInfo?.freeMargin ?? equity;
     final profit = profile?.finance.floatingProfit ?? accountInfo?.profit ?? 0.0;
     final profitColor = profit >= 0 ? AppColors.success : AppColors.error;
-    final profitPrefix = profit > 0 ? '+' : '';
-
+    
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-      child: AppCard(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D121D),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: const Color(0x1AFFFFFF), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1D4ED8).withValues(alpha: 0.08),
+              blurRadius: 32,
+              offset: const Offset(-8, -8),
+            ),
+            const BoxShadow(
+              color: Color(0x40000000),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -60,
+                left: -40,
+                child: Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF2563EB).withValues(alpha: 0.16),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        size: 16,
-                        color: AppColors.accent,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppColors.accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              profile?.displayName != null
+                                  ? 'ACCOUNT • ${profile!.displayName.toUpperCase()}'
+                                  : 'NET ASSET VALUE',
+                              style: const TextStyle(
+                                fontFamily: 'SpaceGrotesk',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0x1F22C55E),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0x3322C55E),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.success,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                profile?.brokerInfo.broker ?? 'Simulation Mode',
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.success,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      currencyFmt.format(balance),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'SpaceGrotesk',
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -1.2,
+                        fontFeatures: AppTheme.tabularNumbers,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      profile?.displayName != null
-                          ? 'TÀI KHOẢN: ${profile!.displayName.toUpperCase()}'
-                          : 'SỐ DƯ TÀI KHOẢN',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.6,
-                      ),
+                    const SizedBox(height: 18),
+                    Container(
+                      height: 0.8,
+                      color: const Color(0x1AFFFFFF),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _balanceMiniStat(
+                            'Vốn Ròng (Equity)',
+                            currencyFmt.format(equity),
+                            AppColors.textPrimary,
+                          ),
+                        ),
+                        Container(
+                          width: 0.8,
+                          height: 28,
+                          color: const Color(0x1AFFFFFF),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 14),
+                            child: _balanceMiniStat(
+                              'Khả Dụng (Free)',
+                              currencyFmt.format(freeMargin),
+                              AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 0.8,
+                          height: 28,
+                          color: const Color(0x1AFFFFFF),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 14),
+                            child: _balanceMiniStat(
+                              'Lãi/Lỗ Tạm',
+                              profit > 0 ? '+${currencyFmt.format(profit)}' : currencyFmt.format(profit),
+                              profitColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    border: Border.all(color: AppColors.borderStrong),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: (profile?.brokerInfo.isRunning ?? false)
-                              ? AppColors.success
-                              : AppColors.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        profile?.brokerInfo.broker ?? 'Simulation',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              currencyFmt.format(balance),
-              style: const TextStyle(
-                fontFamily: 'SpaceGrotesk',
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
-                fontFeatures: AppTheme.tabularNumbers,
               ),
-            ),
-            const SizedBox(height: 16),
-            const Divider(color: AppColors.border, height: 1),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _balanceMiniStat(
-                    'Vốn Ròng (Equity)',
-                    currencyFmt.format(equity),
-                    AppColors.textPrimary,
-                  ),
-                ),
-                Container(width: 1, height: 28, color: AppColors.border),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: _balanceMiniStat(
-                      'Khả Dụng (Free)',
-                      currencyFmt.format(freeMargin),
-                      AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                Container(width: 1, height: 28, color: AppColors.border),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: _balanceMiniStat(
-                      'Lãi/Lỗ Tạm',
-                      '$profitPrefix${currencyFmt.format(profit)}',
-                      profitColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -449,8 +482,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final margin = profile?.finance.margin ?? 0.0;
     final profit = profile?.finance.floatingProfit ?? 0.0;
     final profitColor = profit >= 0 ? AppColors.success : AppColors.error;
-    final profitPrefix = profit > 0 ? '+' : '';
-    final initialLetter =
+        final initialLetter =
         displayName.isNotEmpty ? displayName[0].toUpperCase() : 'T';
 
     return [
@@ -598,7 +630,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 12),
                     _settingRow(
                       'Lợi nhuận tạm (Floating PnL)',
-                      '$profitPrefix${currencyFmt.format(profit)}',
+                      profit > 0 ? '+${currencyFmt.format(profit)}' : currencyFmt.format(profit),
                       valueColor: profitColor,
                     ),
                     const SizedBox(height: 12),
@@ -782,5 +814,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildFloatingNavbar() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              height: 62,
+              decoration: BoxDecoration(
+                color: const Color(0xCC0E131F),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: const Color(0x24FFFFFF),
+                  width: 0.8,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x40000000),
+                    blurRadius: 24,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(child: _buildNavItem(0, Icons.dashboard_rounded, 'Tổng Quan')),
+                  Expanded(child: _buildNavItem(1, Icons.candlestick_chart_rounded, 'Lệnh Đang Vào')),
+                  Expanded(child: _buildNavItem(2, Icons.person_rounded, 'Tài Khoản')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentTab = index),
+      behavior: HitTestBehavior.opaque,
+      child: Center(
+        child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 10 : 8,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0x1F38BDF8) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? Border.all(color: const Color(0x3338BDF8), width: 0.8)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 19,
+              color: isSelected ? AppColors.accent : AppColors.textMuted,
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
   }
 }
